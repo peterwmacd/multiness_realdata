@@ -19,20 +19,27 @@ n <- dim(data)[1]
 m <- dim(data)[3]
 
 #  fit model with CV tuning
-fit <- multiness_fit(data,model="gaussian",self_loops=FALSE,
-                     refit=TRUE,tuning='cv',
-                     tuning_opts=list(layer_wise=TRUE,
-                                      penalty_const_vec=c(2,2.5,3,3.5,4,4.5,5),
-                                      penalty_const_alpha=1,
-                                      p_cv=.2,
-                                      N_cv=5,
-                                      refit_cv=TRUE,
-                                      verbose_cv=TRUE),
-                     optim_opts=list(max_rank=50,verbose=TRUE,return_posns=TRUE))
-
-# recover cv constant
-print(fit$lambda / (sqrt(n)*apply(data,3,denoiseR::estim_sigma,method="MAD")))
+# fit <- multiness_fit(data,model="gaussian",self_loops=FALSE,
+#                      refit=TRUE,tuning='cv',
+#                      tuning_opts=list(layer_wise=TRUE,
+#                                       penalty_const_vec=c(2,2.5,3,3.5,4,4.5,5),
+#                                       penalty_const_alpha=1,
+#                                       p_cv=.2,
+#                                       N_cv=5,
+#                                       refit_cv=TRUE,
+#                                       verbose_cv=TRUE),
+#                      optim_opts=list(max_rank=50,verbose=TRUE,return_posns=TRUE))
+# 
+# # recover cv constant
+# print(fit$lambda / (sqrt(n)*apply(data,3,denoiseR::estim_sigma,method="MAD")))
 # C = 2.5 (delta = 0.5)
+
+# quick model fit without CV
+fit <- multiness_fit(data,model="gaussian",self_loops=FALSE,
+                     refit=TRUE,tuning='adaptive',
+                     tuning_opts=list(layer_wise=TRUE,
+                                      penalty_const=2.5),
+                     optim_opts=list(max_rank=50,verbose=TRUE,return_posns=TRUE))
 
 #### summarize latent dimensions ####
 
@@ -97,7 +104,10 @@ pch_vec[mid_east] <- 1
 #### plot setup ####
 
 # set an indicator for either color or bw plots
-bw <- TRUE
+bw <- FALSE
+
+# set an indicator with different titles for slides
+slides <- TRUE
 
 # rules for which labels to produce:
 # check the 'box' immediately to the right
@@ -140,7 +150,9 @@ if(!doublepane){
 # plot 1st and 2nd common dimensions
 V12 <- fit$V_hat[,1:2]
 plot(V12,xlim=c(0,5),ylim=c(-1.8,1.7),
-     main=ifelse(bw,NA,"Common latent dimensions 1+2"),
+     main=ifelse(bw,NA,ifelse(slides,
+                              "MultiNeSS, common dimensions 1-2",
+                              "Common latent dimensions 1+2")),
      xlab="",ylab="",
      col=ifelse(rep(bw,n),1,colour_vec),
      pch=ifelse(rep(bw,n),pch_vec,1))
@@ -151,7 +163,9 @@ text(V12[do_label,1],V12[do_label,2],node_labels[do_label],pos=4,cex=.6)
 # plot 3rd and 4th common dimensions
 V34 <- fit$V_hat[,3:4]
 plot(V34,xlim=c(-1.5,2.5),
-     main=ifelse(bw,NA,"Common latent dimensions 3+4"),
+     main=ifelse(bw,NA,ifelse(slides,
+                              "MultiNeSS, common dimensions 3-4",
+                              "Common latent dimensions 3+4")),
      xlab=,ylab="",
      col=ifelse(rep(bw,n),1,colour_vec),
      pch=ifelse(rep(bw,n),pch_vec,1))
@@ -171,7 +185,9 @@ mtext('assortative',side=2,line=2,outer=F,at=.05)
 U_wine <- fit$U_hat[[12]][,1:2]
 U_wine[,1] <- -U_wine[,1]
 plot(U_wine,xlim=c(-2.9,4.2),ylim=c(-1.5,3.8),
-     main=ifelse(bw,NA,"Individual latent dimensions 1+2, wine"),
+     main=ifelse(bw,NA,ifelse(slides,
+                              "MultiNeSS, indiv. dimensions 1-2",
+                              "Individual latent dimensions 1+2, wine")),
      xlab="",ylab="",
      col=ifelse(rep(bw,n),1,colour_vec),
      pch=ifelse(rep(bw,n),pch_vec,1))
@@ -186,7 +202,9 @@ text(U_wine[do_label2,1],U_wine[do_label2,2],node_labels[do_label2],pos=2,cex=.6
 U_wine_ase <- ase(data[,,12],2)
 U_wine_ase[,1] <- -U_wine_ase[,1]
 plot(U_wine_ase[,2],U_wine_ase[,1],ylim=c(-.5,5),xlim=c(-1.5,4.4),
-     main=ifelse(NA,"ASE latent dimensions 2+1, wine"),
+     main=ifelse(bw,NA,ifelse(slides,
+                              "Single-layer embedding, dimensions 1-2",
+                              "ASE latent dimensions 2+1, wine")),
      xlab="",ylab="",
      col=ifelse(rep(bw,n),1,colour_vec),
      pch=ifelse(rep(bw,n),pch_vec,1))
@@ -202,12 +220,19 @@ if(bw){
   mtext('assortative',side=2,line=2,outer=F,at=2.1)
 }
 
+if(slides){
+par(xpd=NA)
+abline(v=-2.65,lty=2)
+}
+
 #### plot chocolate layer individual dimensions ####
 
 U_choc <- fit$U_hat[[3]][,1:2]
 U_choc <- -U_choc
 plot(U_choc,ylim=c(-1.5,2.5),xlim=c(-1.3,3.5),
-     main=ifelse(bw,NA,"Individual latent dimensions 1+2, chocolate"),
+     main=ifelse(bw,NA,ifelse(slides,
+                              "MultiNeSS, indiv. dimensions 1-2",
+                              "Individual latent dimensions 1+2, chocolate")),
      xlab="",ylab="",
      col=ifelse(rep(bw,n),1,colour_vec),
      pch=ifelse(rep(bw,n),pch_vec,1))
@@ -221,7 +246,9 @@ text(U_choc[37,1],U_choc[37,2],node_labels[37],pos=2,cex=.6)
 U_choc_ase <- ase(data[,,3],2)
 #U_choc_ase[,1] <- -U_choc_ase[,1]
 plot(U_choc_ase,xlim=c(-.4,5),ylim=c(-2,2.4),
-     main=ifelse(bw,NA,"ASE latent dimensions 1+2, chocolate"),
+     main=ifelse(bw,NA,ifelse(slides,
+                              "Single-layer embedding, dimensions 1-2",
+                              "ASE latent dimensions 1+2, chocolate")),
      xlab="",ylab="",
      col=ifelse(rep(bw,n),1,colour_vec),
      pch=ifelse(rep(bw,n),pch_vec,1))
@@ -237,114 +264,120 @@ if(bw){
   mtext('assortative',side=2,line=2,outer=F,at=0)
 }
 
-# save each plot as 9x6 potrait pdf
+if(slides){
+  par(xpd=NA)
+  abline(v=-1.4,lty=2)
+}
+
+
+# save each plot as 9x6 landscape pdf
 # common[_bw].pdf
 # wine[_bw].pdf
 # choc[_bw].pdf
 
-#### edge imputation task ####
-
-set.seed(1996)
-
-p_holdout <- .05*1:8
-n_holdout <- length(p_holdout)
-nreps <- 5
-
-# two approaches: multiness and svd
-errors_mness <- array(NA,c(m,n_holdout,nreps))
-errors_svd <- array(NA,c(m,n_holdout,nreps))
-
-for(ll in 1:m){
-  for(ii in 1:n_holdout){
-    for(jj in 1:nreps){
-      # hold out a stratified sample of zero and non-zero edges
-      # use MP_nz (non-zero) to evaluate holdout error,
-      # fit with MP (both non-zero and zero edges held out)
-      MP <- array(TRUE,c(n,n,m))
-      MP_nz <- multiness:::missing_mat_sym(n,p_holdout[ii],subset=(data[,,ll]>0))
-      MP_z <- multiness:::missing_mat_sym(n,p_holdout[ii],subset=(data[,,ll]==0))
-      MP[,,ll] <- as.logical(MP_nz*MP_z)
-
-      # fit the multiness_model
-      fit <- multiness_fit(data,model='gaussian',
-                           self_loops=FALSE,refit=TRUE,
-                           tuning='adaptive',
-                           tuning_opts=list(layer_wise=TRUE,
-                                            penalty_const=2.5),
-                           optim_opts=list(max_rank=100,
-                                           missing_pattern=MP,
-                                           verbose=FALSE))
-      fit_mness <- list(F_hat=fit$F_hat,G_hat=list(fit$G_hat[[ll]]))
-
-      # fit a marginal low-rank matrix completion without the other layers
-      # (hard singular value thresholding after inflating entries,
-      # using a slightly larger lambda and only keeping positive eigenvalues)
-      fit_svd <- list()
-      inflation <- 1/(1-p_holdout[ii])
-      temp <- multiness:::sv_thresh_f(inflation*data[,,ll]*MP[,,ll],1.2*fit$lambda[ll],
-                                      max_rank=100,soft=FALSE,pos=TRUE)
-      fit_svd$F_hat <- matrix(0,n,n)
-      fit_svd$G_hat <- list()
-      fit_svd$G_hat[[1]] <- multiness:::einfo_to_mat(temp)
-
-      error_mness <- multiness:::holdout_error(array(data[,,ll],c(n,n,1)),fit_mness,
-                                    hollow=TRUE,misspattern = array(MP_nz,c(n,n,1)))
-
-      error_svd <- multiness:::holdout_error(array(data[,,ll],c(n,n,1)),fit_svd,
-                                      hollow=TRUE,misspattern = array(MP_nz,c(n,n,1)))
-
-      # RMSE normalized and scaled
-      print(c(ll,ii,jj))
-      errors_mness[ll,ii,jj] <- sqrt(error_mness/sum(!MP_nz))
-      errors_svd[ll,ii,jj] <- sqrt(error_svd/sum(!MP_nz))
-    }
-  }
-}
-
-# collapse repeated dimension
-errors_mness_mean <- apply(errors_mness,c(1,2),mean)
-rownames(errors_mness_mean) <- dimnames(data)[[3]]
-colnames(errors_mness_mean) <- p_holdout
-
-errors_svd_mean <- apply(errors_svd,c(1,2),mean)
-rownames(errors_svd_mean) <- dimnames(data)[[3]]
-colnames(errors_svd_mean) <- p_holdout
-
-#### PLOTTING ####
-
-# plot results
-
-par(mfrow=c(2,3),oma=c(2,2,0,0),mar=c(2,2.5,2,2.5))
-
-p_holdout <- .05*1:8
-n_holdout <- length(p_holdout)
-nlay_plot <- 6
-layer_select <- c(12,3,6,10,11,2)
-layer_names <- c('Wine','Chocolate','Distilled Alcohol',
-                 'Tea','Sugar','Prepared Foods')
-# prepared foods including things like soups and condiments
-
-# black and white indicator for plots
-bw <- FALSE
-
-for(ii in 1:nlay_plot){
-  plot(p_holdout,errors_svd_mean[layer_select[ii],],
-       main=layer_names[ii],xlab="",ylab="",type='b',
-       col=ifelse(bw,'black','red'),pch=1,lty=2,
-       ylim=c(0,3.5))
-  lines(p_holdout,errors_mness_mean[layer_select[ii],],type="b",
-        col=ifelse(bw,'black','blue'),
-        pch=17,lty=1)
-  #lines(p_holdout,errors_partial_mean[layer_select[ii],],type="b",col="orange")
-  #lines(p_holdout,errors_extra_mean[layer_select[ii],],type="b",col="green")
-  if(ii==4 & !bw){
-    legend(0.06,1.3,legend=c('SVD','MultiNeSS+'),col=c('red','blue'),
-           lty=c(2,1),pch=c(1,17),bty='n',ncol=1,cex=.9,xjust=0)
-  }
-}
-mtext(ifelse(bw,'Root mean squared error','RMSE'),2,outer=T,line=.2)
-mtext('Proportion missing',1,outer=T,line=.2)
-
-# export as 5x7 landscape pdf
-# layer_holdout[_bw].pdf
-
+# #### edge imputation task ####
+# 
+# set.seed(1996)
+# 
+# p_holdout <- .05*1:8
+# n_holdout <- length(p_holdout)
+# nreps <- 5
+# 
+# # two approaches: multiness and svd
+# errors_mness <- array(NA,c(m,n_holdout,nreps))
+# errors_svd <- array(NA,c(m,n_holdout,nreps))
+# 
+# for(ll in 1:m){
+#   for(ii in 1:n_holdout){
+#     for(jj in 1:nreps){
+#       # hold out a stratified sample of zero and non-zero edges
+#       # use MP_nz (non-zero) to evaluate holdout error,
+#       # fit with MP (both non-zero and zero edges held out)
+#       MP <- array(TRUE,c(n,n,m))
+#       MP_nz <- multiness:::missing_mat_sym(n,p_holdout[ii],subset=(data[,,ll]>0))
+#       MP_z <- multiness:::missing_mat_sym(n,p_holdout[ii],subset=(data[,,ll]==0))
+#       MP[,,ll] <- as.logical(MP_nz*MP_z)
+# 
+#       # fit the multiness_model
+#       fit <- multiness_fit(data,model='gaussian',
+#                            self_loops=FALSE,refit=TRUE,
+#                            tuning='adaptive',
+#                            tuning_opts=list(layer_wise=TRUE,
+#                                             penalty_const=2.5),
+#                            optim_opts=list(max_rank=100,
+#                                            missing_pattern=MP,
+#                                            verbose=FALSE))
+#       fit_mness <- list(F_hat=fit$F_hat,G_hat=list(fit$G_hat[[ll]]))
+# 
+#       # fit a marginal low-rank matrix completion without the other layers
+#       # (hard singular value thresholding after inflating entries,
+#       # using a slightly larger lambda and only keeping positive eigenvalues)
+#       fit_svd <- list()
+#       inflation <- 1/(1-p_holdout[ii])
+#       temp <- multiness:::sv_thresh_f(inflation*data[,,ll]*MP[,,ll],1.2*fit$lambda[ll],
+#                                       max_rank=100,soft=FALSE,pos=TRUE)
+#       fit_svd$F_hat <- matrix(0,n,n)
+#       fit_svd$G_hat <- list()
+#       fit_svd$G_hat[[1]] <- multiness:::einfo_to_mat(temp)
+# 
+#       error_mness <- multiness:::holdout_error(array(data[,,ll],c(n,n,1)),fit_mness,
+#                                     hollow=TRUE,misspattern = array(MP_nz,c(n,n,1)))
+# 
+#       error_svd <- multiness:::holdout_error(array(data[,,ll],c(n,n,1)),fit_svd,
+#                                       hollow=TRUE,misspattern = array(MP_nz,c(n,n,1)))
+# 
+#       # RMSE normalized and scaled
+#       print(c(ll,ii,jj))
+#       errors_mness[ll,ii,jj] <- sqrt(error_mness/sum(!MP_nz))
+#       errors_svd[ll,ii,jj] <- sqrt(error_svd/sum(!MP_nz))
+#     }
+#   }
+# }
+# 
+# # collapse repeated dimension
+# errors_mness_mean <- apply(errors_mness,c(1,2),mean)
+# rownames(errors_mness_mean) <- dimnames(data)[[3]]
+# colnames(errors_mness_mean) <- p_holdout
+# 
+# errors_svd_mean <- apply(errors_svd,c(1,2),mean)
+# rownames(errors_svd_mean) <- dimnames(data)[[3]]
+# colnames(errors_svd_mean) <- p_holdout
+# 
+# #### plots for edge imputation ####
+# 
+# # plot results
+# 
+# par(mfrow=c(2,3),oma=c(2,2,0,0),mar=c(2,2.5,2,2.5))
+# 
+# p_holdout <- .05*1:8
+# n_holdout <- length(p_holdout)
+# nlay_plot <- 6
+# layer_select <- c(12,3,6,10,11,2)
+# layer_names <- c('Wine','Chocolate','Distilled Alcohol',
+#                  'Tea','Sugar','Prepared Foods')
+# # prepared foods including things like soups and condiments
+# 
+# # black and white indicator for plots
+# bw <- FALSE
+# 
+# for(ii in 1:nlay_plot){
+#   plot(p_holdout,errors_svd_mean[layer_select[ii],],
+#        main=layer_names[ii],xlab="",ylab="",type='b',
+#        col=ifelse(bw,'black','red'),pch=1,lty=2,
+#        ylim=c(0,3.5))
+#   lines(p_holdout,errors_mness_mean[layer_select[ii],],type="b",
+#         col=ifelse(bw,'black','blue'),
+#         pch=17,lty=1)
+#   #lines(p_holdout,errors_partial_mean[layer_select[ii],],type="b",col="orange")
+#   #lines(p_holdout,errors_extra_mean[layer_select[ii],],type="b",col="green")
+#   if(ii==4 & !bw){
+#     legend(0.06,1.3,legend=c('SVD','MultiNeSS+'),col=c('red','blue'),
+#            lty=c(2,1),pch=c(1,17),bty='n',ncol=1,cex=.9,xjust=0)
+#   }
+# }
+# mtext(ifelse(bw,'Root mean squared error','RMSE'),2,outer=T,line=.2)
+# mtext('Proportion missing',1,outer=T,line=.2)
+# 
+# # export as 5x7 landscape pdf
+# # layer_holdout[_bw].pdf
+# 
